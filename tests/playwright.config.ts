@@ -15,19 +15,19 @@ const config: PlaywrightTestConfig = {
   testMatch: '*.spec.ts',
   fullyParallel: true,
   timeout: 30 * 2000, /* Maximum time one test can run for. */
-  retries: 3,
+  retries: 0,
   reporter: "html",
   expect: {
     /**
      * Maximum time expect() should wait for the condition to be met.
      * For example in `await expect(locator).toHaveText();`
      */
-    timeout: 5000
+    timeout: 1000
   },
   use: {
     headless: true,
     viewport: { width: 1280, height: 720 },
-    actionTimeout: 15000, /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
+    actionTimeout: 0, /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
     ignoreHTTPSErrors: true,
     trace: 'on-first-retry',
     /* Base URL to use in actions like `await page.goto('/')`. */

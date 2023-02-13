@@ -14,7 +14,7 @@ test.describe('New Payment', () => {
     await expect(productTitle).toContainText('Products');
 
     // Click first product to add to cart
-    await page.click('.inventory_list .inventory_item:first-child');
+    await page.click('.inventory_list .inventory_item:first-child #add-to-cart-sauce-labs-backpack');
 
     // Click cart icon to proceed to cart page
     await page.click('#shopping_cart_container')
@@ -31,9 +31,9 @@ test.describe('New Payment', () => {
     await page.screenshot({ path: `tests/screenshots/product-order/checkout-page.jpg`, fullPage: true })
 
     // Click to proceed with payment
-    await page.click('#finish');
+    await page.click('.cart_footer button#finish');
     
-    const message = await page.locator('h2.complete-header')
+    const message = page.locator('h2.complete-header')
     await expect(message).toBeVisible()
     await expect(message).toContainText(
       'THANK YOU FOR YOUR ORDER'

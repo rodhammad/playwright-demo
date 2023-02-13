@@ -1,4 +1,4 @@
-name: Playwright Tests
+name: E2E tests
 
 on:
   push:
@@ -119,12 +119,10 @@ jobs:
           git fetch --tags
           tags=($(git tag | grep run | sort -V))
           num_tags=${#tags[@]}
-
           if [ $num_tags -gt 1 ]; then
             for i in $(seq 0 $(expr $num_tags - 1)); do
               tag=${tags[$i]}
               folder=${tag#run-}/${{ github.run_attempt }}
-
               if [ -d "reports/${{ github.ref_name }}/$folder" ]; then
                 echo "Deleting old tag $tag and matching folder reports/${{ github.ref_name }}/$folder"
                 git tag -d $tag

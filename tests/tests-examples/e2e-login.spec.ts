@@ -9,6 +9,8 @@ test.describe.parallel('Login / Logout Flow', () => {
 
   // Negative Scenario
   test('Negative Scenario for login', async ({ page }) => {
+    test.fail()
+
     await loginForm(page, 'invalid username', 'invalid password', '#login-button');
 
     const errorMessage = page.locator('.error-message-container h3[data-test="error"]');
