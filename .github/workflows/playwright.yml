@@ -55,6 +55,9 @@ jobs:
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
 
+    - name: Install @playwright/test package to use Playwright Test.
+      run: npm install -D @playwright/test
+
     - name: Run Playwright tests
       run: npx playwright test --config=./tests/playwright.config.ts tests/
 
