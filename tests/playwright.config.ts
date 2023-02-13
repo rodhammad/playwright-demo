@@ -24,7 +24,7 @@ const config: PlaywrightTestConfig = {
     timeout: 5000
   },
   use: {
-    headless: false,
+    headless: true,
     viewport: { width: 1280, height: 720 },
     actionTimeout: 15000, /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
     ignoreHTTPSErrors: true,
@@ -32,7 +32,7 @@ const config: PlaywrightTestConfig = {
     video: 'retain-on-failure',
     screenshot: 'only-on-failure',
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: process.env.URL || 'https://www.saucedemo.com',
+    baseURL: 'https://www.saucedemo.com',
   },
   projects: [
    {
