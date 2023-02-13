@@ -1,13 +1,14 @@
 {
   "name": "playwright-demo",
   "version": "1.0.0",
-  "description": "",
+  "description": "Automated software testing with Playwright",
   "main": "index.js",
   "scripts": {},
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@playwright/test": "^1.30.0"
+    "@playwright/test": "^1.30.0",
+    "@types/jest": "^29.4.0"
   }
 }
