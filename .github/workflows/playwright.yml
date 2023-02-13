@@ -1,57 +1,136 @@
 name: Playwright Tests
+
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - main
   pull_request:
-    branches: [ main, master ]
+    branches:
+      - main
+    #branches-ignore: [ main, gh-pages ]
+  workflow_call:
+    secrets:
+      EMAIL_ADDRESS:
+        required: false
+      SLACK_BOT_TOKEN:
+        required: true
+      CHANNEL_ID:
+        required: true
+
+  workflow_dispatch:
+    inputs:
+      cleanup_reports:
+        description: "Trigger the step to clean up old reports"
+        required: false
+        default: false
+
+env:
+  NODE_VERSION: 16
+
+# Allow one concurrent deployment
+concurrency:
+  group: ${{ github.ref_name }}
+  # optional
+  cancel-in-progress: true
+
 jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16]
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v3
       with:
-        node-version: 16
+        node-version: ${{ env.NODE_VERSION }}
+
     - name: Install dependencies
       run: npm ci
+
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
+
     - name: Run Playwright tests
-      run: npx playwright test
+      run: npx playwright test --config=./tests/playwright.config.ts tests/
+
     - uses: actions/upload-artifact@v3
       if: always()
       with:
         name: playwright-report
         path: playwright-report/
-        retention-days: 30
+        retention-days: 2
 
   publish_report:
     name: Publish HTML Report
     # using always() is not ideal here, because it would also run if the workflow was cancelled
     if: "success() || needs.test.result == 'failure'"
-    needs: [test]
+    needs: test
     runs-on: ubuntu-latest
     continue-on-error: true
     env:
+      # Contains all reports for current branch
+      BRANCH_REPORTS_DIR: reports/${{ github.ref_name }}/${{ github.run_id }}
       # Unique URL path for each workflow run attempt
       HTML_REPORT_URL_PATH: reports/${{ github.ref_name }}/${{ github.run_id }}/${{ github.run_attempt }}
+      GITHUB_REF: ${{ github.ref }}
+      run_id_prefix: ${{ github.run_id }}
     steps:
       - name: Checkout GitHub Pages Branch
         uses: actions/checkout@v3
         with:
           ref: gh-pages
+
       - name: Set Git User
         # see: https://github.com/actions/checkout/issues/13#issuecomment-724415212
         run: |
-          git config --global user.name "github-actions[bot]"
-        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "rodhammad"
+
       - name: Download zipped HTML report
         uses: actions/download-artifact@v3
         with:
           name: playwright-report
-          github_token: ${{ secrets.GITHUB_TOKEN }}
           path: ${{ env.HTML_REPORT_URL_PATH }}
+
+      - name: Check for tag
+        id: check-tag
+        run: |
+          echo "Checking for tag..."
+          if [ -n "${{ env.GITHUB_REF }}" ]; then
+            echo "Tag found: ${{ env.GITHUB_REF }}"
+            echo "has_tag=true" > $GITHUB_ENV
+          else
+            echo "No tag found"
+            echo "has_tag=false" > $GITHUB_ENV
+          fi
+
+      - name: Clean up old reports
+        if: env.has_tag == 'true'
+        run: |
+          echo "Cleaning up old reports..."
+          git fetch --tags
+          tags=($(git tag | grep run | sort -V))
+          num_tags=${#tags[@]}
+
+          if [ $num_tags -gt 1 ]; then
+            for i in $(seq 0 $(expr $num_tags - 1)); do
+              tag=${tags[$i]}
+              folder=${tag#run-}/${{ github.run_attempt }}
+
+              if [ -d "reports/${{ github.ref_name }}/$folder" ]; then
+                echo "Deleting old tag $tag and matching folder reports/${{ github.ref_name }}/$folder"
+                git tag -d $tag
+                git push origin --delete $tag
+                rm -rf "reports/${{ github.ref_name }}/$folder"
+              fi
+            done
+          fi
+
       - name: Push HTML Report
         timeout-minutes: 3
         # commit report, then try push-rebase-loop until it's able to merge the HTML report to the gh-pages branch
@@ -67,14 +146,37 @@ jobs:
               exit 1
             fi
 
-            git push
+            git tag run-${{ github.run_id }}
+            git push --tags
             if [ $? -eq 0 ]; then
               echo "Successfully pushed HTML report to repo."
               exit 0
             fi
           done
-      - name: Output Report URL as Worfklow Annotation
+      
+      - name: Push to GitHub Pages Branch
         run: |
-          FULL_HTML_REPORT_URL=https://rodcode47.github.io/playwright-with-gh-pages/$HTML_REPORT_URL_PATH
+          git push -f origin gh-pages
 
-          echo "::notice title=Published Playwright Test Report::$FULL_HTML_REPORT_URL"qa 
+      - name: Output Report URL as Worfklow Annotation
+        id: output-report-url
+        run: |
+          FULL_HTML_REPORT_URL=https://Rodcode47.github.io/${{ github.event.repository.name }}/$HTML_REPORT_URL_PATH
+          echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"
+          echo "report_url=$FULL_HTML_REPORT_URL" >> $GITHUB_ENV
+
+      - name: Notify slack on success
+        if: ${{ job.status == 'success' }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: abinoda/slack-action@master
+        with:
+          args: '{\"channel\":\"${{ secrets.CHANNEL_ID }}\",\"blocks\":[{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"*Playwright Tests on Repository:* ${{ github.event.repository.name }}\"}},{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"*Tests Report State:* ${{ job.status }} ✅\"}},{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"*Published tests report here:* ${{ env.report_url }}\"}}]}'
+
+      - name: Notify slack on failure
+        if: ${{ job.status == 'failure' }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: abinoda/slack-action@master
+        with:
+          args: '{\"channel\":\"${{ secrets.CHANNEL_ID }}\",\"blocks\":[{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"Playwright Tests on Repository:* ${{ github.event.repository.name }}\"}},{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"*Tests Report State:* ${{ job.status }} 💢\"}},{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"*Published tests report here:* ${{ env.report_url }}\"}}]}'
