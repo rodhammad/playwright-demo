@@ -75,7 +75,6 @@ test.describe.parallel('Hooks', () => {
   })
 
   test('Single element Screenshot', async ({ page }) => {
-    // await page.goto('https://example.com/')
     const elementHeader = await page.$('.login_logo')
     await elementHeader.screenshot({ path: `tests/screenshots/logo.jpg` })
   })
