@@ -164,7 +164,7 @@ jobs:
       - name: Output Report URL as Worfklow Annotation
         id: output-report-url
         run: |
-          FULL_HTML_REPORT_URL=https://Rodcode47.github.io/${{ github.event.repository.name }}/$HTML_REPORT_URL_PATH
+          FULL_HTML_REPORT_URL=https://rodhammad.github.io/${{ github.event.repository.name }}/$HTML_REPORT_URL_PATH
           echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"
           echo "report_url=$FULL_HTML_REPORT_URL" >> $GITHUB_ENV
 
