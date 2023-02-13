@@ -1,5 +1,5 @@
 // @ts-check
-import { PlaywrightTestConfig, devices } from '@playwright/test'
+import { PlaywrightTestConfig } from '@playwright/test'
 
 /**
  * Read environment variables from file.
@@ -13,9 +13,10 @@ import { PlaywrightTestConfig, devices } from '@playwright/test'
 const config: PlaywrightTestConfig = {
   testDir: './tests-examples/',
   testMatch: '*.spec.ts',
-  fullyParallel: false,
+  fullyParallel: true,
   timeout: 30 * 2000, /* Maximum time one test can run for. */
-  retries: 0,
+  retries: 3,
+  reporter: "html",
   expect: {
     /**
      * Maximum time expect() should wait for the condition to be met.
@@ -28,9 +29,7 @@ const config: PlaywrightTestConfig = {
     viewport: { width: 1280, height: 720 },
     actionTimeout: 15000, /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
     ignoreHTTPSErrors: true,
-    trace: 'retain-on-failure',
-    video: 'retain-on-failure',
-    screenshot: 'only-on-failure',
+    trace: 'on-first-retry',
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: 'https://www.saucedemo.com',
   },
