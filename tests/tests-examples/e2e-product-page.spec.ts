@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { loadHomepage, loginForm} from '../utils/helper'
-import { throws } from 'assert'
+import { formInputs, loadHomepage } from '../utils/helper'
 
 test.describe.parallel('Login / Logout Flow', () => {
   // Before Hook
@@ -12,7 +11,13 @@ test.describe.parallel('Login / Logout Flow', () => {
   test('Negative Scenario for correct number of products', async ({ page }) => {
     test.fail()
 
-    await loginForm(page, 'standard_user', 'secret_sauce', '#login-button');
+    await formInputs(page, {
+      'firstName': undefined, 
+      'lastName': undefined,
+      'postalCode': undefined,
+      'user-name': 'standard_user',
+      'password': 'secret_sauce',
+    }, '#login-button');
 
     const inventoryContainer = await page.$('.inventory_list')
     if (!inventoryContainer) {
@@ -25,7 +30,13 @@ test.describe.parallel('Login / Logout Flow', () => {
 
   // Positive Scenario
   test('Positive Scenario for product page', async ({ page }) => {
-    await loginForm(page, 'standard_user', 'secret_sauce', '#login-button');
+    await formInputs(page, {
+      'firstName': undefined, 
+      'lastName': undefined,
+      'postalCode': undefined,
+      'user-name': 'standard_user',
+      'password': 'secret_sauce',
+    }, '#login-button');
 
     // Click goto product page
     await page.click('.inventory_list .inventory_item:first-child #item_4_title_link');
